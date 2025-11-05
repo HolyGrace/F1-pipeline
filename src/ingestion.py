@@ -30,9 +30,35 @@ class BronzeIngestion:
         # Create bronze directory if it doesn't exist
         self.bronze_path.mkdir(parents=True, exist_ok=True)
         
+        # Define schema overrides for problematic files
+        # Bronze layer: preserve raw data as strings when ambiguous
+        self.schema_overrides = {
+            'constructor_results': {
+                'points': pl.Utf8
+            },
+            'constructor_standings': {
+                'points': pl.Utf8,
+                'positionText': pl.Utf8
+            },
+            'driver_standings': {
+                'points': pl.Utf8,
+                'positionText': pl.Utf8
+            },
+            'pit_stops': {
+                'duration': pl.Utf8
+            },
+            'results': {
+                'points': pl.Utf8,
+                'number': pl.Utf8,
+                'positionText': pl.Utf8,
+                'position': pl.Utf8
+            }
+        }
+        
         logger.info(f"Initialized BronzeIngestion")
         logger.info(f"Raw path: {self.raw_path}")
         logger.info(f"Bronze path: {self.bronze_path}")
+        logger.info(f"Schema overrides defined for {len(self.schema_overrides)} files")
         
     def get_csv_files(self) -> List[Path]:
         """Get all CSV files from raw directory"""
@@ -56,7 +82,15 @@ class BronzeIngestion:
         try:
             # Read CSV with Polars
             start_time = datetime.now()
-            df = pl.read_csv(csv_file)
+            
+            schema_override = self.schema_overrides.get(file_name, None)
+
+            if schema_override:
+                logger.info(f"Applying schema override for {file_name}")
+                df = pl.read_csv(csv_file, schema_overrides=schema_override)
+            else:
+                df = pl.read_csv(csv_file)
+            
             read_time = (datetime.now() - start_time).total_seconds()
             
             # Get file sizes
