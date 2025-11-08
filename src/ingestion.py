@@ -13,6 +13,8 @@ from typing import List, Dict
 import logging
 from datetime import datetime
 
+from config import config
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -23,42 +25,17 @@ logger = logging.getLogger(__name__)
 class BronzeIngestion:
     """Handles ingestion of raw CSV files into Bronze layer (Parquet)"""
     
-    def __init__(self, raw_path: str = "data/raw", bronze_path: str = "data/bronze"):
-        self.raw_path = Path(raw_path)
-        self.bronze_path = Path(bronze_path)
+    def __init__(self):
+        self.raw_path = config.RAW_PATH
+        self.bronze_path = config.BRONZE_PATH
         
-        # Create bronze directory if it doesn't exist
-        self.bronze_path.mkdir(parents=True, exist_ok=True)
-        
-        # Define schema overrides for problematic files
-        # Bronze layer: preserve raw data as strings when ambiguous
-        self.schema_overrides = {
-            'constructor_results': {
-                'points': pl.Utf8
-            },
-            'constructor_standings': {
-                'points': pl.Utf8,
-                'positionText': pl.Utf8
-            },
-            'driver_standings': {
-                'points': pl.Utf8,
-                'positionText': pl.Utf8
-            },
-            'pit_stops': {
-                'duration': pl.Utf8
-            },
-            'results': {
-                'points': pl.Utf8,
-                'number': pl.Utf8,
-                'positionText': pl.Utf8,
-                'position': pl.Utf8
-            }
-        }
+        # Ensure bronze directory exists
+        config.ensure_paths()
         
         logger.info(f"Initialized BronzeIngestion")
         logger.info(f"Raw path: {self.raw_path}")
         logger.info(f"Bronze path: {self.bronze_path}")
-        logger.info(f"Schema overrides defined for {len(self.schema_overrides)} files")
+        logger.info(f"Schema overrides defined for {len(config.BRONZE_SCHEMA_OVERRIDES)} tables")
         
     def get_csv_files(self) -> List[Path]:
         """Get all CSV files from raw directory"""
@@ -83,7 +60,7 @@ class BronzeIngestion:
             # Read CSV with Polars
             start_time = datetime.now()
             
-            schema_override = self.schema_overrides.get(file_name, None)
+            schema_override = config.get_bronze_schema_override(file_name)
 
             if schema_override:
                 logger.info(f"Applying schema override for {file_name}")
@@ -101,7 +78,7 @@ class BronzeIngestion:
             
             # Write to Parquet with compression
             write_start = datetime.now()
-            df.write_parquet(parquet_file, compression="snappy")
+            df.write_parquet(parquet_file, compression=config.PARQUET_COMPRESSION)
             write_time = (datetime.now() - write_start).total_seconds()
             
             parquet_size = parquet_file.stat().st_size / (1024**2)
@@ -191,7 +168,7 @@ def main():
     summary = ingestion.ingest_all()
     
     # Save summary to CSV for reference
-    summary_path = Path("logs") / f"bronze_ingestion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    summary_path = config.LOGS_PATH / f"bronze_ingestion_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     summary_path.parent.mkdir(exist_ok=True)
     
     if len(summary) > 0:
