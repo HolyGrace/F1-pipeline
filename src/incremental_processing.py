@@ -194,6 +194,24 @@ class IncrementalProcessor:
             if silver_file.exists() and not is_initial_load:
                 # Append to existing data
                 df_existing = pl.read_parquet(silver_file)
+                
+                # Ensure schema compatibility - align columns
+                existing_cols = set(df_existing.columns)
+                new_cols = set(df_transformed.columns)
+                
+                # Get common columns only
+                common_cols = existing_cols.intersection(new_cols)
+                
+                if existing_cols != new_cols:
+                    logger.warning(f"  Schema mismatch detected. Aligning to common columns.")
+                    logger.warning(f"    Existing only: {existing_cols - new_cols}")
+                    logger.warning(f"    New only: {new_cols - existing_cols}")
+                    
+                    # Select only common columns in same order
+                    common_cols_list = sorted(list(common_cols))
+                    df_existing = df_existing.select(common_cols_list)
+                    df_transformed = df_transformed.select(common_cols_list)
+                
                 df_final = pl.concat([df_existing, df_transformed])
                 logger.info(f"  Appending {len(df_transformed):,} rows to existing {len(df_existing):,} rows")
             else:
@@ -215,12 +233,12 @@ class IncrementalProcessor:
                 'total_rows': len(df_final)
             }
             
-            logger.info(f"{table_name}: Processed {len(years_to_process)} years, {len(df_transformed):,} rows")
+            logger.info(f"SUCCESS: {table_name}: Processed {len(years_to_process)} years, {len(df_transformed):,} rows")
             
             return stats
             
         except Exception as e:
-            logger.error(f"Error processing {table_name}: {str(e)}")
+            logger.error(f"ERROR: Error processing {table_name}: {str(e)}")
             import traceback
             traceback.print_exc()
             return {
