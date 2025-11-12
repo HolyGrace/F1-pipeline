@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data files
+data/raw/*.csv
+data/bronze/*.parquet
+data/silver/*.parquet
+data/gold/*.parquet
+*.csv
+*.parquet
+*.db
+*.duckdb
+
+# Exceptions
+!data/raw/.gitkeep
+!data/bronze/.gitkeep
+!data/silver/.gitkeep
+!data/gold/.gitkeep
+
+# Logs
+logs/*.log
+logs/*.txt
+*.log
+
+# Airflow
+airflow.db
+airflow.cfg
+airflow-webserver.pid
+dags/__pycache__/
+
+# Machine Learning models
+models/*.pkl
+models/*.joblib
+models/*.h5
+models/*.pt
+*.pkl
+*.joblib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
